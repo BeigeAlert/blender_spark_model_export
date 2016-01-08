@@ -1842,7 +1842,6 @@ def write_model(d: ModelData, model_name: str):
     thisDir.append('.'.join(file))
     
     out_file = '/'.join(thisDir)
-    print("out file:", out_file)
     
     #os.makedirs(os.path.dirname(out_file), exist_ok=True)
     
