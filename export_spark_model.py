@@ -12,7 +12,6 @@ from spark_physics import *
 from spark_common import *
 from spark_writer import *
 import sys
-import os
 
 # Constants
 def MAX_BONES_PER_FACE_SET(): return 60
@@ -1842,8 +1841,6 @@ def write_model(d: ModelData, model_name: str):
     thisDir.append('.'.join(file))
     
     out_file = '/'.join(thisDir)
-    
-    #os.makedirs(os.path.dirname(out_file), exist_ok=True)
     
     with open(out_file, 'wb') as file_write:
         file_write.write(writer.close_and_return())
