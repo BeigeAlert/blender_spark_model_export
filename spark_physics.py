@@ -376,11 +376,6 @@ def add_joint(d, obj, solid_names):
     new_joint.name = obj.name
     new_joint.solid_1 = get_solid_from_name(d, constraint.object1.name)
     new_joint.solid_2 = get_solid_from_name(d, constraint.object2.name)
-    
-    if new_joint.solid_1 is None:
-        raise SparkException("The object '" + constraint.object1.name + "' -- specified to be Object 1 in the joint '" + obj.name + "' -- does not appear to be a valid solid.")
-    if new_joint.solid_2 is None:
-        raise SparkException("The object '" + constraint.object2.name + "' -- specified to be Object 2 in the joint '" + obj.name + "' -- does not appear to be a valid solid.")
 
     return new_joint
 
