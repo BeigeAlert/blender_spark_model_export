@@ -402,12 +402,6 @@ def calculate_bone_bounding_boxes(d):
 def load_geometry(d):
     d.model = SparkModel()
 
-    '''# search for alternate origin, if not disabled
-    if not d.disable_alternate_origin:
-        origin_index = bpy.data.objects.find('origin')
-        if origin_index != -1:
-            d.alternate_origin_object = bpy.data.objects[origin_index]'''
-
     result = bpy.data.groups.find(d.geometry_group[0])
     if result == -1:
         raise SparkException("Geometry group '" + d.geometry_group[0] + "' does not exist!")
@@ -434,7 +428,12 @@ def load_geometry(d):
     objs = [obj for obj in group_objs if obj in scene_objs]
     found_mesh = False  # will be set True when a suitable mesh is found, for error reporting
     for obj in objs:
-        if not obj.type == 'MESH':
+        isCurve = False
+        if obj.type == 'CURVE':
+            old_setting = obj.data.use_uv_as_generated
+            obj.data.use_uv_as_generated = True #force uv generation on, otherwise we can't generate tangents
+            isCurve = True
+        elif not obj.type == 'MESH':
             continue
 
         found_mesh = True
@@ -443,6 +442,8 @@ def load_geometry(d):
         scene = bpy.context.scene
         temp_object = bpy.data.objects.new('temp_processing_object', bpy.data.meshes.new_from_object(scene, obj,
                                                                                                      True, 'PREVIEW'))
+        if isCurve:
+            obj.data.use_uv_as_generated = old_setting #reset this back to whatever user had before.
         me = temp_object.data
         scene.objects.link(temp_object)
         scene.objects.active = temp_object
@@ -455,8 +456,11 @@ def load_geometry(d):
         bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
         # noinspection PyCallByClass
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        # me.calc_normals()
-        me.calc_tangents()
+        
+        try:
+            me.calc_tangents()
+        except RuntimeError: # caused by not having UVs
+            pass
 
         me.transform(obj.matrix_world)
 
@@ -476,7 +480,6 @@ def load_geometry(d):
         head_verts = [None] * len(me.vertices)
         """:type : list[HeadVertex]"""
         
-        #me.calc_normals_split()  # force blender to calculate the split-vertex normals.
         num_loops = len(me.loops)  # useful to know later how many loops total, without having to count each list
         for i in range(0, len(me.loops)):
             new_vert = Vertex()
@@ -524,67 +527,11 @@ def load_geometry(d):
             p1 = Vec3(new_tri.verts[0].co)
             p2 = Vec3(new_tri.verts[1].co)
             p3 = Vec3(new_tri.verts[2].co)
-
-            '''new_tri.normal = ((p2 - p1).cross_product(p3 - p1)).normalized()
-
-            # Set the vertex's normal vector to the face's flat normal for now.
-            for j in range(3):
-                new_tri.verts[j].nrm = new_tri.normal[:]'''
             
             # Assign the backwards-link to each vertex
             for j in range(3):
                 new_tri.verts[j].triangles.append(new_tri)
             tris[i] = new_tri
-            
-            '''# Calculate the tangent and bitangent values for the triangle
-            co_0 = new_tri.verts[0].co
-            co_1 = new_tri.verts[1].co
-            co_2 = new_tri.verts[2].co
-
-            tc_0 = new_tri.verts[0].t_co
-            tc_1 = new_tri.verts[1].t_co
-            tc_2 = new_tri.verts[2].t_co
-
-            vec_0 = co_1[0] - co_0[0], co_1[1] - co_0[1], co_1[2] - co_0[2]  # edge 0->1
-            vec_1 = co_2[0] - co_0[0], co_2[1] - co_0[1], co_2[2] - co_0[2]  # edge 0->2
-            t_vec_0 = tc_1[0] - tc_0[0], tc_1[1] - tc_0[1]
-            t_vec_1 = tc_2[0] - tc_0[0], tc_2[1] - tc_0[1]
-            
-            determinant = (t_vec_0[0] * t_vec_1[1]) - (t_vec_0[1] * t_vec_1[0])
-            if determinant == 0.0:  # skip this to avoid divide-by-zero
-                for j in range(3):
-                    new_tri.verts[j].tan = [1.0, 0.0, 0.0]
-                    new_tri.verts[j].bin = [0.0, 1.0, 0.0]
-            else:
-                uv_inv = (t_vec_1[1] / determinant, -t_vec_0[1] / determinant, -t_vec_1[0] / determinant,
-                          t_vec_0[0] / determinant)
-                t_x = uv_inv[0] * vec_0[0] + uv_inv[1] * vec_1[0]
-                t_y = uv_inv[0] * vec_0[1] + uv_inv[1] * vec_1[1]
-                t_z = uv_inv[0] * vec_0[2] + uv_inv[1] * vec_1[2]
-                b_x = uv_inv[2] * vec_0[0] + uv_inv[3] * vec_1[0]
-                b_y = uv_inv[2] * vec_0[1] + uv_inv[3] * vec_1[1]
-                b_z = uv_inv[2] * vec_0[2] + uv_inv[3] * vec_1[2]
-                tangent = normalize_vector((t_x, t_y, t_z))
-                binormal = normalize_vector((b_x, b_y, b_z))
-
-                for j in range(3):
-                    new_tri.verts[j].tan = tangent
-                    new_tri.verts[j].bin = binormal'''
-            
-            '''# Calculate the influence each loop will have on the host vertex's smooth normal vector.
-            # To get the smoothed normal vector, we average the contributing normals, weighted by the
-            # angle of their edges.  Eg. A 45-degree angle corner will have less influence than a
-            # 90-degree side.
-            if me.polygons[i].use_smooth:
-                vec_2 = (co_2[0] - co_1[0], co_2[1] - co_1[1], co_2[2] - co_1[2])  # edge 1->2
-                vec_3 = negate_vector(vec_0)
-                vec_4 = negate_vector(vec_1)
-                vec_5 = negate_vector(vec_2)
-
-                vecs = [vec_0, vec_1, vec_2, vec_3, vec_4, vec_5]
-                print(vecs)
-                for j in range(3):
-                    new_tri.verts[j].smooth_influence = math.acos(normalized_dot_product(vecs[j * 2], vecs[j * 2 + 1]))'''
 
         # Process bone weights
         arm_obj = d.model.armature_object
@@ -612,18 +559,6 @@ def load_geometry(d):
         scene.objects.unlink(temp_object)
         bpy.data.objects.remove(temp_object)
         bpy.data.meshes.remove(me)
-        
-        '''# Now, we calculate the smooth normals for each vertex
-        for h in head_verts:
-            calc_normal = [0.0, 0.0, 0.0]
-            for v in h.get_verts():
-                calc_normal[0] += v.nrm[0] * v.smooth_influence
-                calc_normal[1] += v.nrm[1] * v.smooth_influence
-                calc_normal[2] += v.nrm[2] * v.smooth_influence
-            calc_normal = normalize_vector(calc_normal)
-            for v in h.get_verts():
-                if v.smooth_influence > 0.00001:  # is a smoothed face
-                    v.nrm = calc_normal[:]'''
 
         # Smooth out the tangent/bitangent vectors at each vertex with the other tangent/bitangent values
         # This means we average the tangent/bitangent values of each loop for every vertex.  A loop is only
@@ -631,37 +566,10 @@ def load_geometry(d):
         # potential to have more than one averaged tan/bit basis per vertex.  So we'll keep re-running this
         # averaging procedure until we've averaged up every loop.
 
-        '''new_tangents = [None] * num_loops
-        new_binormals = [None] * num_loops
-        tangent_index = 0
-        for h in head_verts:
-            # Attempt to combine similar tangent/bitangents of verts.
-            for v1 in h.get_verts():
-                tan_basis = Vec3(v1.tan)
-                bin_basis = Vec3(v1.bin)
-                tan_sum = Vec3(tan_basis)
-                bin_sum = Vec3(bin_basis)
-                for v2 in h.get_verts():
-                    if v1 == v2:
-                        continue
-                    tan_comp = Vec3(v2.tan)
-                    bin_comp = Vec3(v2.bin)
-                    if tan_basis.dot_product(tan_comp) > 0.0001 and bin_basis.dot_product(bin_comp) > 0.0001:
-                        tan_sum += tan_comp
-                        bin_sum += bin_comp
-                new_tangents[tangent_index] = tan_sum.normalized()
-                new_binormals[tangent_index] = bin_sum.normalized()
-                tangent_index += 1
-        tangent_index = 0
-        for h in head_verts:
-            # Apply calculated tangents
-            for v in h.get_verts():
-                v.tan = new_tangents[tangent_index]
-                v.bin = new_binormals[tangent_index]
-                tangent_index += 1'''
-
         # Merge duplicate loops.
         for h in head_verts:  # for every vertex, look in the loops for duplicates
+            if not h:
+                continue
             loops = h.get_verts()
             for i in range(0, len(loops) - 1):
                 if not loops[i]:
@@ -681,17 +589,21 @@ def load_geometry(d):
                         v1.triangles = list(set(v1.triangles) | set(v2.triangles))
                         loops[j] = None
 
-        # condense list: remove None entries.  Head vertex is always safe.  Loop over children.
-        h.children = [c for c in h.children if c is not None]
+            # condense list: remove None entries.  Head vertex is always safe.  Loop over children.
+            h.children = [c for c in h.children if c is not None]
 
         # append to the verts and triangles lists
         count = 0
         for h in head_verts:
+            if not h:
+                continue
             count += 1 + (len(h.children) if h.children else 0)
         verts = [None] * count
         """:type : list[Vertex]"""
         next_index = 0
         for h in head_verts:
+            if not h:
+                continue
             verts[next_index] = h.head
             next_index += 1
             if h.children:
