@@ -14,6 +14,10 @@ from export_spark_model import *
 # noinspection PyPep8Naming
 def SUPPORTED_JOINT_TYPES(): return ['POINT', 'FIXED', 'HINGE', 'GENERIC']
 
+def GetFileName():
+    return (bpy.data.filepath.replace('\\','/').split('/'))[-1]
+
+blendName = GetFileName()
 
 class CollisionRepEntry:
     def __init__(self):
@@ -206,7 +210,7 @@ def add_solid(d, scene, obj):
         if obj.parent_type != 'BONE':
             # the user may have been attempting to parent to a bone in the armature.  Warn them of this simple mistake.
             if obj.parent.type == 'ARMATURE':
-                print("Warning: Solid '", obj.name, "' is parented to the armature OBJECT, not a particular "
+                print(blendName, ": Warning: Solid '", obj.name, "' is parented to the armature OBJECT, not a particular "
                                                     "bone.  Export continuing under the assumption that this solid is "
                                                     "static, and un-bound to any bone.", sep='')
                 # get the world space transform of the object.  It's static unless it's parented to a bone.
@@ -274,21 +278,21 @@ def add_joint(d, obj, solid_names):
                              "Please change the constraint type for Joint '" + obj.name + "' to a supported value.  "
                              "Supported values are: " + ', '.join(SUPPORTED_JOINT_TYPES()[:-1]) + ', and '
                              + SUPPORTED_JOINT_TYPES()[-1] + '.')
-
+                             
     # Skip unless both objects supplied
     if not constraint.object1:
-        print("Warning: Skipping joint '", obj.name, "'.  Solid 1 was not defined.")
+        print(blendName, ": Warning: Skipping joint '", obj.name, "'.  Solid 1 was not defined.", sep='')
         return None
     if not constraint.object2:
-        print("Warning: Skipping joint '", obj.name, "'.  Solid 2 was not defined.")
+        print(blendName, ": Warning: Skipping joint '", obj.name, "'.  Solid 2 was not defined.", sep='')
         return None
 
     # Skip unless both objects are valid solids
     if constraint.object1.name not in solid_names:
-        print("Warning: Skipping joint '", obj.name, "'.  Solid 1 was a valid solid defined in the collision rep.")
+        print(blendName, ": Warning: Skipping joint '", obj.name, "'.  Solid 1 was not a valid solid defined in the collision rep.", sep='')
         return None
     if constraint.object2.name not in solid_names:
-        print("Warning: Skipping joint '", obj.name, "'.  Solid 2 was a valid solid defined in the collision rep.")
+        print(blendName, ": Warning: Skipping joint '", obj.name, "'.  Solid 2 was not a valid solid defined in the collision rep.", sep='')
         return None
 
     # Skip disabled constraints
@@ -319,7 +323,7 @@ def add_joint(d, obj, solid_names):
     if constraint.type == 'GENERIC' and (constraint.use_limit_lin_x or constraint.use_limit_lin_y or
                                          constraint.use_limit_lin_z):
         # Check if the user tried to setup transform constraints, warn them these do nothing, if they did.
-        print("Warning: Joint '", obj.name, "' has linear-constraints enabled.  "
+        print(blendName, ": Warning: Joint '", obj.name, "' has linear-constraints enabled.  "
               "Only angular-constraints are supported.  Ignoring and proceeding.", sep='')
 
     if constraint.type == 'FIXED':
@@ -356,7 +360,7 @@ def add_joint(d, obj, solid_names):
     if obj.parent:
         # not sure what the hell the user is thinking.  Joints shouldn't be parented.
         # I'll just transform back to world-space and proceed as usual with a warning.
-        print("Warning: Joint '", obj.name, "' is parented to '", obj.parent.name, "'.  ",
+        print(blendName, ": Warning: Joint '", obj.name, "' is parented to '", obj.parent.name, "'.  ",
               "This may lead to unintended consequences.  Proceeding.", sep='')
 
     # local_transform = parent_world_matrix_inverted * object_world_matrix
@@ -505,11 +509,11 @@ def read_physics_group(d, rep, physics_group):
     group_index = bpy.data.groups.find(physics_group[1])
     scene_index = bpy.data.scenes.find(physics_group[2])
     if group_index == -1:
-        print("Warning!  Physics group '", physics_group[1], "' defined in model_compile block, but not present "
+        print(blendName, ": Warning!  Physics group '", physics_group[1], "' defined in model_compile block, but not present "
               "in .blend file.  Rep will be empty in exported model.", sep='')
         return
     if scene_index == -1:
-        print("Warning!  Physics scene '", physics_group[2], "' defined in model_compile block, but not present "
+        print(blendName, ": Warning!  Physics scene '", physics_group[2], "' defined in model_compile block, but not present "
               "in .blend file.  Rep will be empty in exported model.", sep='')
         return
 
@@ -583,7 +587,7 @@ def read_physics_group(d, rep, physics_group):
         # that one of their objects isn't being processed.
         for obj in objs:
             if obj.type != 'EMPTY' and obj.type != 'MESH':
-                print("Warning: Object '", obj.name, "' is not valid to be a member of this physics group.  Objects "
+                print(blendName, ": Warning: Object '", obj.name, "' is not valid to be a member of this physics group.  Objects "
                       "must be of type 'EMPTY' or 'MESH' to be a joint or a solid, respectively.")
 
         rep.num_solids = len(d.solids) - rep.first_solid_index
@@ -591,7 +595,7 @@ def read_physics_group(d, rep, physics_group):
         rep.num_pairs = len(d.collision_pairs) - rep.first_pair_index
 
     else:
-        print("Warning!  No MESH-type objects present for rep '", physics_group[0], "'.  Rep will be empty in "
+        print(blendName, ": Warning!  No MESH-type objects present for rep '", physics_group[0], "'.  Rep will be empty in "
               "exported model.")
         rep.num_solids = 0
         rep.num_joints = 0

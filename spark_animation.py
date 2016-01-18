@@ -10,6 +10,10 @@ import sys
 from spark_common import *
 from export_spark_model import *
 
+def GetFileName():
+    return (bpy.data.filepath.replace('\\','/').split('/'))[-1]
+
+blendName = GetFileName()
 
 # Constants
 def ANIMATION_FLAG_RELATIVE(): return 1
@@ -907,12 +911,12 @@ def load_animations(d):
             anim_end = master_end
         
         if anim_end > master_end:
-            print("Warning: frame range of animation '", anim.source_name, "' is beyond the frame range of the scene.  "
+            print(blendName, ": Warning: frame range of animation '", anim.source_name, "' is beyond the frame range of the scene.  "
                                                                            "Trimming and proceeding.")
             anim_end = master_end
         
         if anim_start < master_start:
-            print("Warning: frame range of animation '", anim.source_name, "' is beyond the frame range of the scene.  "
+            print(blendName, ": Warning: frame range of animation '", anim.source_name, "' is beyond the frame range of the scene.  "
                                                                            "Trimming and proceeding.")
             anim_start = master_start
 

@@ -17,6 +17,10 @@ import sys
 def MAX_BONES_PER_FACE_SET(): return 60
 def DEV_MATERIAL(): return 'materials/dev/checkerboard.material'
 
+def GetFileName():
+    return (bpy.data.filepath.replace('\\','/').split('/'))[-1]
+
+blend_name = GetFileName()
 
 class FaceSet:
     def __init__(self):
@@ -187,7 +191,7 @@ def add_material(m, material):
     
     if img.filepath == '':
         new_material.spark_material = DEV_MATERIAL()
-        print("Invalid texture path. (NOTE: packing textures into the .blend is not supported... "
+        print(blend_name, ": Invalid texture path. (NOTE: packing textures into the .blend is not supported... "
               "or wise even if it WAS... ;) )")
         return len(m.materials) - 1
     
@@ -269,7 +273,7 @@ def pre_process_bones(d):
 
     if not arm_obj:
         if d.animations:  # animations isn't empty, but no armature present
-            print("Warning: animations declared, but there is no base-armature present in the visual scene.  "
+            print(blend_name, ": Warning: animations declared, but there is no base-armature present in the visual scene.  "
                   "Proceeding as a static-mesh export.")
         return None
     bones = arm_obj.data.bones
@@ -457,10 +461,8 @@ def load_geometry(d):
         # noinspection PyCallByClass
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         
-        try:
-            me.calc_tangents()
-        except RuntimeError: # caused by not having UVs
-            pass
+        if me.uv_layers.active:
+            me.calc_tangents()  # only calculate tangents if UV data is present.
 
         me.transform(obj.matrix_world)
 
@@ -634,7 +636,7 @@ def load_geometry(d):
                 no_parent = True
             elif obj.parent_type != 'BONE':  # NOTE THE UNDERSCORE!!!  (type of relationship TO parent)
                 no_parent = True
-                print("Warning!  Camera '", obj.name, "' parented to the armature OBJECT, not to an individual bone "
+                print(blend_name, ": Warning!  Camera '", obj.name, "' parented to the armature OBJECT, not to an individual bone "
                       "within the armature.  Camera will be treated as static.", sep='')
             else:
                 no_parent = False
@@ -679,10 +681,10 @@ def load_geometry(d):
     for i in range(0, len(d.attach_points)):
         obj = bpy.data.objects[d.attach_points[i]]  # we know this is a valid index from the parser stage
         if obj.type != 'EMPTY':
-            print("Warning!  object '", d.attach_points[i], "' is not an 'EMPTY'-type object.  This is unusual, but "
+            print(blend_name, ": Warning!  object '", d.attach_points[i], "' is not an 'EMPTY'-type object.  This is unusual, but "
                   "workable.  Proceeding, but you really should fix this for clarity-sake.", sep='')
         if obj not in objs:
-            print("Warning!  AttachPoint '", d.attach_points[i], "' is not part of both the geometry group and scene.  "
+            print(blend_name, ": Warning!  AttachPoint '", d.attach_points[i], "' is not part of both the geometry group and scene.  "
                   "Skipping.", sep='')
             continue
         new_attach = AttachPoint()
@@ -694,7 +696,7 @@ def load_geometry(d):
             no_parent = True
         elif obj.parent_type != 'BONE':  # NOTE THE UNDERSCORE!!!  (type of relationship TO parent)
             no_parent = True
-            print("Warning!  Attach point '", obj.name, "' parented to the armature OBJECT, not to an individual bone "
+            print(blend_name, ": Warning!  Attach point '", obj.name, "' parented to the armature OBJECT, not to an individual bone "
                   "within the armature.  Attach point will be treated as static.", sep='')
         else:
             no_parent = False
@@ -899,7 +901,7 @@ def parse_model_compile_list():
         model_compile_list.append(model_compile_name)
 
     if not model_name_list:  # empty
-        print("A 'model_compile_list' block was provided, but empty!  Attempting single model export...")
+        print(blend_name, ": A 'model_compile_list' block was provided, but empty!  Attempting single model export...")
 
     return model_name_list, model_compile_list
 
@@ -930,7 +932,7 @@ def parse_model_compile(d, model_compile_name):
                 raise SparkException('Object "' + name + '" does''nt exist!  Check spelling. (Error at line ' +
                                      str(reader.get_line()) + ')')
             if name in d.attach_points:
-                print("Warning: duplicate attach_point declared at line ", reader.get_line(), ". Skipping.")
+                print(blend_name, ": Warning: duplicate attach_point declared at line ", reader.get_line(), ". Skipping.")
                 continue
             else:
                 d.attach_points.append(name)
@@ -938,7 +940,7 @@ def parse_model_compile(d, model_compile_name):
 
         elif token == 'geometry':
             if d.geometry_group is not None:
-                print("Warning: duplicate geometry group declared at line ", reader.get_line(), ". Skipping.")
+                print(blend_name, ": Warning: duplicate geometry group declared at line ", reader.get_line(), ". Skipping.")
                 continue
             name = reader.get_token()
             scene = reader.get_token()
@@ -959,7 +961,7 @@ def parse_model_compile(d, model_compile_name):
 
         elif token == 'physics':
             if d.physics_groups is not None:
-                print("Warning: duplicate physics group declared at line ", reader.get_line(), ". Skipping.")
+                print(blend_name, ": Warning: duplicate physics group declared at line ", reader.get_line(), ". Skipping.")
                 continue
             # Two ways to do this: the old way -- declare a single physics group name, and the new way -- declare
             # several physics maps with rep names.  We know it's the new way if the first token is an open bracket.
@@ -1009,14 +1011,14 @@ def parse_model_compile(d, model_compile_name):
 
         elif token == 'scale':
             if d.scale_value != 1.0:
-                print("Warning: 'scale' value declared multiple times.  Multiplying subsequent declarations.")
+                print(blend_name, ": Warning: 'scale' value declared multiple times.  Multiplying subsequent declarations.")
             d.scale_value *= read_float(reader)
             continue
 
         elif token == 'linear_max_error':
             lin_max = read_float(reader)
             if d.linear_max_error is not None:
-                print("Warning: duplicate linear_max_error value declared at line ", reader.get_line(), ". Skipping.")
+                print(blend_name, ": Warning: duplicate linear_max_error value declared at line ", reader.get_line(), ". Skipping.")
                 continue
             d.linear_max_error = lin_max
             continue
@@ -1024,7 +1026,7 @@ def parse_model_compile(d, model_compile_name):
         elif token == 'quat_max_error':
             qt_max = read_float(reader)
             if d.quat_max_error is not None:
-                print("Warning: duplicate quat_max_error value declared at line ", reader.get_line(), ". Skipping.")
+                print(blend_name, ": Warning: duplicate quat_max_error value declared at line ", reader.get_line(), ". Skipping.")
                 continue
             d.quat_max_error = qt_max
             continue
@@ -1035,7 +1037,7 @@ def parse_model_compile(d, model_compile_name):
 
         elif token == 'animation_model':
             if d.animation_model is not None:
-                print("Warning: duplicate animation_model declared at line ", reader.get_line(), ". Skipping.")
+                print(blend_name, ": Warning: duplicate animation_model declared at line ", reader.get_line(), ". Skipping.")
                 continue
             anim_model = reader.get_token()
             if anim_model == '':
@@ -1121,7 +1123,7 @@ def parse_model_compile(d, model_compile_name):
     f_name = '.'.join(bpy.data.filepath.replace('\\','/').split('/')[-1].split('.')[:-1])
     if len(f_name) >= 5 and f_name[-5:].lower() == '_view':
         d.compression_enabled = False
-        print("Disabling animation compression for view model.")
+        print(blend_name, ": Disabling animation compression for view model.")
 
     return 1
 
@@ -1769,7 +1771,7 @@ def save():
     model_name_list, model_compile_list = parse_model_compile_list()
     # if compile_success == -1:
         # raise SparkException("No model_compile text-block found.  Aborting.")
-
+    
     if not model_name_list:  # Empty
         filepath = bpy.data.filepath.replace('\\','/')
         name_split = filepath.split('/')
@@ -1780,19 +1782,59 @@ def save():
         name = '.'.join(name)
         model_name_list.append(name)
         model_compile_list.append('model_compile')
-
-    for i in range(len(model_name_list)):
-        d = ModelData()
-        compile_success = parse_model_compile(d, model_compile_list[i])
-        if compile_success == -1:
-            # raise SparkException("Unable to locate the model_compile textblock '" + model_compile_list[i] + "'.")
-            print("Unable to locate the model_compile textblock '",
-                  model_compile_list[i], "'.  This model failed, but will attempt to compile others",
-                  sep='', file=sys.stderr)
-        load_geometry(d)
-        load_animations(d)
-        load_physics(d)
-        #write_model(d, base_dir, model_name_list[i])
-        write_model(d, model_name_list[i])
     
-    bpy.ops.wm.quit_blender()
+    success_list = [True] * len(model_name_list)
+    for i in range(len(model_name_list)):
+        try:
+            d = ModelData()
+            compile_success = parse_model_compile(d, model_compile_list[i])
+            if compile_success == -1:
+                print(blend_name, ": Unable to locate the model_compile text-block '",
+                      model_compile_list[i], "'.  This model failed, but will attempt to compile others",
+                      sep='', file=sys.stderr)
+                success_list[i] = False
+                continue
+            load_geometry(d)
+            load_animations(d)
+            load_physics(d)
+            write_model(d, model_name_list[i])
+        except SparkException as e:
+            success_list[i] = False
+            print(blend_name, ": SparkException raised!  ", e.args[0], sep='', file=sys.stderr)
+        
+        except Exception as e2:
+            success_list[i] = False
+            print(blend_name, ": Exception raised!  ", e2.__class__.__name__, ": ", e2.args[0], sep='', file=sys.stderr)
+            
+    succeeded_count = 0
+    failed_count = 0
+    for i in range(len(model_name_list)):
+        if success_list[i] == True:
+            succeeded_count += 1
+        else:
+            failed_count += 1
+    
+    if succeeded_count == 0 and failed_count == 0:
+        print(blend_name, ": No models were found/built!", file=sys.stderr)
+    elif succeeded_count > 0 and failed_count == 0:
+        print(blend_name, ": All ", succeeded_count, " files successfully built.", sep='', file=sys.stderr)
+    elif succeeded_count == 0 and failed_count > 0:
+        print(blend_name, ": All ", failed_count, " files failed to build.", sep='', file=sys.stderr)
+    else:
+        print(blend_name, ": ", succeeded_count, " files built successfully, but ", failed_count, " files failed to build.", sep='', file=sys.stderr)
+    
+    if failed_count > 0:
+        print(blend_name, ": Failed files:", sep='', file=sys.stderr)
+        for i in range(len(model_name_list)):
+            if success_list[i] == False:
+                print("  ", model_name_list[i], sep='', file=sys.stderr)
+        
+    sys.exit(1)
+    
+    
+    
+    
+    
+    
+    
+    
