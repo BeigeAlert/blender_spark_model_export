@@ -16,6 +16,7 @@ import sys
 # Constants
 def MAX_BONES_PER_FACE_SET(): return 60
 def DEV_MATERIAL(): return 'materials/dev/checkerboard.material'
+def INCHESPERMETER(): return 39.3700787
 
 def GetFileName():
     return (bpy.data.filepath.replace('\\','/').split('/'))[-1]
@@ -1117,7 +1118,7 @@ def parse_model_compile(d, model_compile_name):
     if d.quat_max_error is None:
         d.quat_max_error = 0.01
 
-    d.scale_value /= 39.37
+    d.scale_value /= INCHESPERMETER()
 
     # disable compression if it's a view model (ie the name of the blend file ends with '_view')
     f_name = '.'.join(bpy.data.filepath.replace('\\','/').split('/')[-1].split('.')[:-1])
