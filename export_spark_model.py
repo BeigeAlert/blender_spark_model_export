@@ -880,7 +880,7 @@ def parse_model_compile_list():
         model_name_split = model_name.split('.')
         if model_name_split[-1].lower() != 'model':
             model_name_split.append('model')
-        model_name = '.'.join(model_name_split).lower()
+        model_name = '.'.join(model_name_split)
         if model_name in model_name_list:
             raise SparkException("Duplicate model name provided in model_compile_list block.  Aborting." +
                                  "(Error at line " + str(reader.get_line()) + ")")
@@ -1719,14 +1719,6 @@ def write_model(d: ModelData, model_name: str):
         writer.begin_chunk("Chunk_AnimationModel")
         writer.write_string(d.animation_model)
         writer.end_chunk()
-
-    #base_path_folders = base_dir.replace('\\','/')
-    #base_path_folders = base_path_folders.split('/')
-
-    #model_name_path = model_name.split('/')
-    #final_path = base_path_folders[:]
-    #final_path.extend(model_name_path)
-    #out_file = '/'.join(final_path)
     
     thisDir = bpy.data.filepath.replace('\\','/').split('/')
     thisDir.pop() # discard filename
