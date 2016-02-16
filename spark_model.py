@@ -1,3 +1,4 @@
+# 1453703568
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -207,3 +208,4 @@ class SparkModel:
             if self.materials[i].spark_material == s_mat:
                 return i
         return -1
+

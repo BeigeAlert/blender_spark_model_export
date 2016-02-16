@@ -1,3 +1,4 @@
+# 1453703568
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -218,6 +219,8 @@ def add_solid(d, scene, obj):
                 # transform to alternate origin, if applicable
                 if d.alternate_origin_object:
                     transform = Mat4(d.alternate_origin_object.matrix_world.inverted()) * transform
+            else:
+                transform = Mat4(obj.matrix_world)
 
         else:  # Parented to bone
             if d.alternate_origin_object:
@@ -241,7 +244,10 @@ def add_solid(d, scene, obj):
         transform_mat = transform
     else:
         transform_mat = transform
-        transform_mat.fix_axes(reverse=True)
+        transform_mat_b = Mat4(transform_mat)
+        transform_mat_b.fix_axes(reverse=True)
+        blen_trans = transform_mat_b.to_blender()
+        temp_mesh.transform(blen_trans)
     new_solid.object_to_bone_coords = Coords(transform_mat)
     new_solid.object_to_bone_coords.origin *= d.scale_value
 
@@ -636,3 +642,4 @@ def load_physics(d):
         new_rep = CollisionRep()
         reps.append(new_rep)
         read_physics_group(d, new_rep, d.physics_groups[i])
+

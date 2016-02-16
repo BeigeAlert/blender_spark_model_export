@@ -1,3 +1,4 @@
+# 1453703568
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -107,3 +108,4 @@ class SparkWriter:
 
     def close_and_return(self):
         return self.data[0:self.pos]
+
