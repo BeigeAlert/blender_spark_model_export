@@ -1,4 +1,4 @@
-# 1453703568
+# 1455664595
 # Helps tokenize the model_compile text block
 # Written by Trevor "BeigeAlert" Harris
 
@@ -103,4 +103,5 @@ class TokenizedReader:
     
     def get_line(self):
         return self.lines[self.line].line_number + 1
+
 

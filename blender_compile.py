@@ -1,4 +1,4 @@
-# 1453703568
+# 1455664595
 import sys
 import bpy
 
@@ -12,3 +12,4 @@ import export_spark_model
 export_spark_model.save()
 
 bpy.ops.wm.quit_blender()
+

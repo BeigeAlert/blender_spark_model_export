@@ -1,4 +1,4 @@
-# 1453703568
+# 1455664595
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -907,4 +907,5 @@ class Quat:
         dz = self.z - sign * other.z
         dw = self.w - sign * other.w
         return dx * dx + dy * dy + dz * dz + dw * dw
+
 

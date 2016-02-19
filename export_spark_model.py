@@ -1,4 +1,4 @@
-# 1453703568
+# 1455664595
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -1755,7 +1755,7 @@ def write_model(d: ModelData, model_name: str):
 
 
 #def save(base_dir: str):
-def save():
+def save(debug=False):
     # old way
     # d = ModelData()
     # compile_success = parse_model_compile(d)
@@ -1779,7 +1779,28 @@ def save():
     
     success_list = [True] * len(model_name_list)
     for i in range(len(model_name_list)):
-        try:
+        if not debug: #skip try-except if in debug mode
+            try:
+                d = ModelData()
+                compile_success = parse_model_compile(d, model_compile_list[i])
+                if compile_success == -1:
+                    print(blend_name, ": Unable to locate the model_compile text-block '",
+                          model_compile_list[i], "'.  This model failed, but will attempt to compile others",
+                          sep='', file=sys.stderr)
+                    success_list[i] = False
+                    continue
+                load_geometry(d)
+                load_animations(d)
+                load_physics(d)
+                write_model(d, model_name_list[i])
+            except SparkException as e:
+                success_list[i] = False
+                print(blend_name, ": SparkException raised!  ", e.args[0], sep='', file=sys.stderr)
+            
+            except Exception as e2:
+                success_list[i] = False
+                print(blend_name, ": Exception raised!  ", e2.__class__.__name__, ": ", e2.args[0], sep='', file=sys.stderr)
+        else:
             d = ModelData()
             compile_success = parse_model_compile(d, model_compile_list[i])
             if compile_success == -1:
@@ -1792,13 +1813,6 @@ def save():
             load_animations(d)
             load_physics(d)
             write_model(d, model_name_list[i])
-        except SparkException as e:
-            success_list[i] = False
-            print(blend_name, ": SparkException raised!  ", e.args[0], sep='', file=sys.stderr)
-        
-        except Exception as e2:
-            success_list[i] = False
-            print(blend_name, ": Exception raised!  ", e2.__class__.__name__, ": ", e2.args[0], sep='', file=sys.stderr)
            
     succeeded_count = 0
     failed_count = 0
@@ -1823,7 +1837,8 @@ def save():
             if success_list[i] == False:
                 print("  ", model_name_list[i], sep='', file=sys.stderr)
         
-    sys.exit(1)
+    if not debug:
+        sys.exit(1)
     
     
     
@@ -1832,4 +1847,5 @@ def save():
     
     
     
+
 

@@ -1,4 +1,4 @@
-# 1453703568
+# 1455664595
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -198,9 +198,6 @@ def add_solid(d, scene, obj):
     scale_mat[1][1] = obj.scale.y
     scale_mat[2][2] = obj.scale.z
 
-    # scale up vertices to compensate for resetting the object's scale to 1.0
-    temp_mesh.transform(scale_mat * d.scale_value)
-
     reverse_winding = False
     if (obj.scale.x * obj.scale.y * obj.scale.z) < 0.0:
         reverse_winding = True
@@ -238,18 +235,20 @@ def add_solid(d, scene, obj):
         if d.alternate_origin_object:
             transform = Mat4(d.alternate_origin_object.matrix_world.inverted()) * transform
 
-    transform *= Mat4(scale_mat.inverted())
-
     if valid_parent:
+        # scale up vertices to compensate for resetting the object's scale to 1.0
+        temp_mesh.transform(scale_mat * d.scale_value)
+        transform *= Mat4(scale_mat.inverted())
         transform_mat = transform
+        new_solid.object_to_bone_coords = Coords(transform_mat)
+        new_solid.object_to_bone_coords.origin *= d.scale_value
     else:
         transform_mat = transform
         transform_mat_b = Mat4(transform_mat)
         transform_mat_b.fix_axes(reverse=True)
         blen_trans = transform_mat_b.to_blender()
-        temp_mesh.transform(blen_trans)
-    new_solid.object_to_bone_coords = Coords(transform_mat)
-    new_solid.object_to_bone_coords.origin *= d.scale_value
+        temp_mesh.transform(blen_trans * d.scale_value)
+        new_solid.object_to_bone_coords = Coords(Mat4())
 
     new_solid.vertices = [Vec3([v.co[0], v.co[1], v.co[2]]) for v in temp_mesh.vertices]
 
@@ -642,4 +641,5 @@ def load_physics(d):
         new_rep = CollisionRep()
         reps.append(new_rep)
         read_physics_group(d, new_rep, d.physics_groups[i])
+
 

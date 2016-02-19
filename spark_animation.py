@@ -1,4 +1,4 @@
-# 1453703568
+# 1455664595
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -989,4 +989,5 @@ def load_animations(d):
         seq = d.sequences[i]
         anim_node = d.animation_nodes[seq.animation_node]
         seq.length = anim_node.get_length(d)
+
 
