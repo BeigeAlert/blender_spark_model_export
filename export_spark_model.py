@@ -463,14 +463,14 @@ def load_geometry(d):
         # noinspection PyCallByClass
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         
-        if me.uv_layers.active:
-            me.calc_tangents()  # only calculate tangents if UV data is present.
-
         me.transform(obj.matrix_world)
 
         # transform to alternate origin, if applicable
         if d.alternate_origin_object:
             me.transform(d.alternate_origin_object.matrix_world.inverted())
+        
+        if me.uv_layers.active:
+            me.calc_tangents()  # only calculate tangents if UV data is present.
         
         # In Spark, vertices are split by triangle because the normal/tangent/bitangent vectors and
         # texture coordinates are stored one-per-vertex.  Not so in blender.  In Blender, a mesh
