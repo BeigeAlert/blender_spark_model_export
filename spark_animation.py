@@ -925,8 +925,6 @@ def load_animations(d):
         
         index_start = anim_start - master_start
         index_end = anim_end - anim_start + index_start
-        print("index_start = ", index_start, sep='')
-        print("index_end = ", index_end, sep='')
         
         if index_start < 0:
             raise SparkException("Invalid frame range provided for animation '" + anim.source_name + "'.")
