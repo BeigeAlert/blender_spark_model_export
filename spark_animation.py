@@ -417,7 +417,7 @@ class AnimationNode:
             return 0.0
         # returns the length of the animation_node, in seconds
         anim = d.animations[self.animation]
-        num_frames = anim.end_frame - anim.start_frame - 1
+        num_frames = max(anim.end_frame - anim.start_frame - 1, 0)
         return num_frames / (anim.frame_rate * anim.speed)
 
 
@@ -905,10 +905,10 @@ def load_animations(d):
         else:
             anim_end = math.ceil(anim.end_frame)
         
-        if not anim_start:
+        if anim_start == None:
             anim_start = master_start
         
-        if not anim_end:
+        if anim_end == None:
             anim_end = master_end
         
         if anim_end > master_end:
@@ -925,6 +925,8 @@ def load_animations(d):
         
         index_start = anim_start - master_start
         index_end = anim_end - anim_start + index_start
+        print("index_start = ", index_start, sep='')
+        print("index_end = ", index_end, sep='')
         
         if index_start < 0:
             raise SparkException("Invalid frame range provided for animation '" + anim.source_name + "'.")
