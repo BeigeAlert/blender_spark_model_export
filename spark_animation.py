@@ -905,10 +905,10 @@ def load_animations(d):
         else:
             anim_end = math.ceil(anim.end_frame)
         
-        if anim_start:
+        if not anim_start:
             anim_start = master_start
         
-        if anim_end:
+        if not anim_end:
             anim_end = master_end
         
         if anim_end > master_end:
@@ -935,8 +935,8 @@ def load_animations(d):
         # frame tags' frame values are relative to the start of the animation, not the entire timeline
         # eg. frame tag @ frame 12 in an animation that starts @ frame 5 will have a frame value of 7
         for i in range(len(raw_anim_tags[master_anim])):
-            if anim_start >= raw_anim_tags[a][i].frame >= anim_end:  # if the frame tag is in the animation range
-                new_tag = FrameTag(raw_anim_tags[a][i])
+            if anim_start >= raw_anim_tags[master_anim][i].frame >= anim_end:  # if the frame tag is in the animation range
+                new_tag = FrameTag(raw_anim_tags[master_anim][i])
                 new_tag.frame -= master_start - anim_start
                 anim.frame_tags.append(new_tag)
 

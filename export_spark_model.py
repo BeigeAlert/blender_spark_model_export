@@ -1,4 +1,3 @@
-# 1455664595
 # Blender -> Spark .model exporter
 # Natural Selection 2 model compile utility written
 # by Max McGuire and Steve An of Unknown Worlds Entertainment
@@ -146,6 +145,9 @@ class ModelData:
 
         self.add_world_bone = False  # Directive to create an extra bone to allow for static geometry in addition to
                                      # animated geometry
+        
+        self.flip_bitangent = False # Used to make bitangent match older assets exported with the y-channel flipped.
+        """:type : bool"""
         
 
 def add_dummy_material(m):
@@ -505,7 +507,10 @@ def load_geometry(d):
             coords = me.loops[i].tangent
             new_vert.tan = [coords[1], coords[2], coords[0]]
             coords = me.loops[i].bitangent
-            new_vert.bin = [coords[1], coords[2], coords[0]]
+            if d.flip_bitangent:
+                new_vert.bin = [-coords[1], -coords[2], -coords[0]]
+            else:
+                new_vert.bin = [coords[1], coords[2], coords[0]]
 
             # add this vertex to the bounding box of the model
             d.model.bound_box.min_max(new_vert.co[:])
@@ -1105,7 +1110,8 @@ def parse_model_compile(d, model_compile_name):
                 raise SparkException("Alternate origin object '" + origin_name + "' doesn't exist!")
             d.alternate_origin_object = bpy.data.objects[origin_name]
 
-
+        elif token == "flip_bitangent":
+            d.flip_bitangent = True
         else:
             raise SparkException("Syntax Error: Unexpected token " + token + " at line " + str(reader.get_line()) + ".")
     
